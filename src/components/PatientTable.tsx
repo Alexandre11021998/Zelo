@@ -35,6 +35,7 @@ interface Patient {
   data_nascimento: string;
   status: PatientStatus;
   is_active?: boolean;
+  updated_by_name?: string | null;
 }
 
 interface PatientTableProps {
@@ -78,7 +79,16 @@ export function PatientTable({
         <TableBody>
           {patients.map((patient) => (
             <TableRow key={patient.id}>
-              <TableCell className="font-medium">{patient.name}</TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-medium">{patient.name}</p>
+                  {patient.updated_by_name && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Alterado por: {patient.updated_by_name}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 {new Date(patient.data_nascimento).toLocaleDateString('pt-BR')}
               </TableCell>

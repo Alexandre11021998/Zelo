@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LogOut, HeartHandshake, UserSearch, History, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { PatientStatus } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,6 +28,7 @@ interface Patient {
   data_nascimento: string;
   status: PatientStatus;
   is_active: boolean;
+  updated_by_name?: string | null;
 }
 
 export default function AdminDashboard() {
@@ -39,8 +41,14 @@ export default function AdminDashboard() {
   const [newPatientName, setNewPatientName] = useState('');
   const [newPatientDob, setNewPatientDob] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
+
+  const getUpdatedByInfo = () => ({
+    updated_by: user?.id || null,
+    updated_by_name: profile?.full_name || user?.email || 'Desconhecido',
+  });
 
   const handleNewPatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +66,11 @@ export default function AdminDashboard() {
 
     const { error } = await supabase
       .from('patients')
-      .insert({ name: newPatientName.trim(), data_nascimento: newPatientDob });
+      .insert({
+        name: newPatientName.trim(),
+        data_nascimento: newPatientDob,
+        ...getUpdatedByInfo(),
+      });
 
     if (error) {
       console.error('Erro ao cadastrar paciente:', error);
@@ -122,7 +134,10 @@ export default function AdminDashboard() {
     
     const { error } = await supabase
       .from('patients')
-      .update({ status: newStatus })
+      .update({
+        status: newStatus,
+        ...getUpdatedByInfo(),
+      })
       .eq('id', patientId);
 
     if (error) {
@@ -146,7 +161,10 @@ export default function AdminDashboard() {
     
     const { error } = await supabase
       .from('patients')
-      .update({ is_active: false })
+      .update({
+        is_active: false,
+        ...getUpdatedByInfo(),
+      })
       .eq('id', patientId);
 
     if (error) {
@@ -170,7 +188,10 @@ export default function AdminDashboard() {
     
     const { error } = await supabase
       .from('patients')
-      .update({ is_active: true })
+      .update({
+        is_active: true,
+        ...getUpdatedByInfo(),
+      })
       .eq('id', patientId);
 
     if (error) {
@@ -217,7 +238,9 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-bold">Zelo</h1>
-              <p className="text-sm text-muted-foreground">Painel de Enfermagem</p>
+              <p className="text-sm text-muted-foreground">
+                {profile?.full_name || 'Painel de Enfermagem'}
+              </p>
             </div>
           </div>
           <Button variant="outline" onClick={signOut}>
