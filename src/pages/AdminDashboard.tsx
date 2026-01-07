@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PatientSearchBar } from '@/components/PatientSearchBar';
 import { PatientCsvImport } from '@/components/PatientCsvImport';
 import { PatientTable } from '@/components/PatientTable';
+import { DateInput } from '@/components/DateInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -230,20 +231,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      {/* Header with primary color */}
+      <header className="border-b border-border bg-primary shadow-soft">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
               <HeartHandshake className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Zelo</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-xl font-bold text-primary-foreground">Zelo</h1>
+              <p className="text-sm text-primary-foreground/80">
                 {profile?.full_name || 'Painel de Enfermagem'}
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={signOut}>
+          <Button variant="secondary" onClick={signOut} className="shadow-soft">
             <LogOut className="w-4 h-4 mr-2" />
             Sair
           </Button>
@@ -257,14 +259,14 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap gap-3">
             <Dialog open={isNewPatientOpen} onOpenChange={setIsNewPatientOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="shadow-soft">
                   <UserPlus className="w-4 h-4 mr-2" />
                   Novo Paciente
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-card border-border shadow-card">
                 <DialogHeader>
-                  <DialogTitle>Cadastrar Novo Paciente</DialogTitle>
+                  <DialogTitle className="text-foreground">Cadastrar Novo Paciente</DialogTitle>
                   <DialogDescription>
                     Preencha os dados do paciente para realizar o cadastro.
                   </DialogDescription>
@@ -279,15 +281,15 @@ export default function AdminDashboard() {
                         value={newPatientName}
                         onChange={(e) => setNewPatientName(e.target.value)}
                         disabled={isSubmitting}
+                        className="bg-background"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="patientDob">Data de Nascimento</Label>
-                      <Input
+                      <DateInput
                         id="patientDob"
-                        type="date"
                         value={newPatientDob}
-                        onChange={(e) => setNewPatientDob(e.target.value)}
+                        onChange={setNewPatientDob}
                         disabled={isSubmitting}
                       />
                     </div>
@@ -296,7 +298,7 @@ export default function AdminDashboard() {
                     <Button type="button" variant="outline" onClick={() => setIsNewPatientOpen(false)} disabled={isSubmitting}>
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting} className="shadow-soft">
                       {isSubmitting ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : (
@@ -311,22 +313,24 @@ export default function AdminDashboard() {
             <PatientCsvImport onImportComplete={fetchPatients} />
           </div>
 
-          {/* Search Bar */}
-          <PatientSearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Buscar paciente por nome..."
-          />
+          {/* Search Bar - Highlighted with primary accent */}
+          <div className="bg-card border border-border rounded-xl p-4 shadow-card">
+            <PatientSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Buscar paciente por nome..."
+            />
+          </div>
         </div>
 
         {/* Tabs for Active / History */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'history')} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="active" className="gap-2">
+          <TabsList className="bg-muted border border-border">
+            <TabsTrigger value="active" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <HeartHandshake className="w-4 h-4" />
               Internados ({activeCount})
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
+            <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <History className="w-4 h-4" />
               Histórico ({historyCount})
             </TabsTrigger>
@@ -336,13 +340,13 @@ export default function AdminDashboard() {
             {loading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
                 ))}
               </div>
             ) : filteredPatients.length === 0 ? (
-              <div className="text-center py-12 border rounded-lg bg-card">
+              <div className="text-center py-12 border border-border rounded-xl bg-card shadow-card">
                 <UserSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold mb-2">
+                <h2 className="text-xl font-semibold mb-2 text-foreground">
                   {searchQuery ? 'Nenhum paciente encontrado' : 'Nenhum paciente internado'}
                 </h2>
                 <p className="text-muted-foreground">
@@ -371,13 +375,13 @@ export default function AdminDashboard() {
             {loading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
                 ))}
               </div>
             ) : filteredPatients.length === 0 ? (
-              <div className="text-center py-12 border rounded-lg bg-card">
+              <div className="text-center py-12 border border-border rounded-xl bg-card shadow-card">
                 <History className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold mb-2">
+                <h2 className="text-xl font-semibold mb-2 text-foreground">
                   {searchQuery ? 'Nenhum paciente encontrado' : 'Histórico vazio'}
                 </h2>
                 <p className="text-muted-foreground">

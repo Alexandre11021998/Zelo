@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Loader2 } from 'lucide-react';
+import { Shield, Loader2, HeartHandshake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigate, Link } from 'react-router-dom';
@@ -41,7 +41,7 @@ export default function AdminSignup() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -113,137 +113,153 @@ export default function AdminSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Cadastro de Profissional</CardTitle>
-          <CardDescription>
-            Preencha seus dados para acessar o painel de enfermagem
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Nome Completo *</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Seu nome completo"
-                disabled={loading}
-              />
-              {errors.fullName && (
-                <p className="text-sm text-destructive">{errors.fullName}</p>
-              )}
-            </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <HeartHandshake className="w-5 h-5 text-primary" />
+          <span className="font-semibold">Zelo</span>
+        </Link>
+      </header>
 
-            <div className="space-y-2">
-              <Label htmlFor="cpf">CPF *</Label>
-              <Input
-                id="cpf"
-                type="text"
-                value={cpf}
-                onChange={handleCpfChange}
-                placeholder="000.000.000-00"
-                maxLength={14}
-                disabled={loading}
-              />
-              {errors.cpf && (
-                <p className="text-sm text-destructive">{errors.cpf}</p>
-              )}
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border border-border shadow-card">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mb-4 shadow-soft">
+              <Shield className="w-8 h-8 text-primary" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="registrationNumber">COREN/CRM *</Label>
-              <Input
-                id="registrationNumber"
-                type="text"
-                value={registrationNumber}
-                onChange={(e) => setRegistrationNumber(e.target.value)}
-                placeholder="Ex: COREN-SP 123456"
-                disabled={loading}
-              />
-              {errors.registrationNumber && (
-                <p className="text-sm text-destructive">{errors.registrationNumber}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="jobRole">Cargo/Função *</Label>
-              <Select value={jobRole} onValueChange={setJobRole} disabled={loading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione seu cargo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {JOB_ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.jobRole && (
-                <p className="text-sm text-destructive">{errors.jobRole}</p>
-              )}
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <p className="text-sm text-muted-foreground mb-4">Dados de acesso</p>
-              
+            <CardTitle className="text-2xl text-foreground">Cadastro de Profissional</CardTitle>
+            <CardDescription>
+              Preencha seus dados para acessar o painel de enfermagem
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email *</Label>
+                <Label htmlFor="fullName">Nome Completo *</Label>
                 <Input
-                  id="signup-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Seu nome completo"
                   disabled={loading}
+                  className="bg-background"
                 />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
+                {errors.fullName && (
+                  <p className="text-sm text-destructive">{errors.fullName}</p>
                 )}
               </div>
 
-              <div className="space-y-2 mt-4">
-                <Label htmlFor="signup-password">Senha *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF *</Label>
                 <Input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  id="cpf"
+                  type="text"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
                   disabled={loading}
+                  className="bg-background"
                 />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
+                {errors.cpf && (
+                  <p className="text-sm text-destructive">{errors.cpf}</p>
                 )}
               </div>
-            </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Cadastrando...
-                </>
-              ) : (
-                'Cadastrar'
-              )}
-            </Button>
-          </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            Já tem uma conta?{' '}
-            <Link to="/login-admin" className="text-primary hover:underline">
-              Fazer login
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="registrationNumber">COREN/CRM *</Label>
+                <Input
+                  id="registrationNumber"
+                  type="text"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                  placeholder="Ex: COREN-SP 123456"
+                  disabled={loading}
+                  className="bg-background"
+                />
+                {errors.registrationNumber && (
+                  <p className="text-sm text-destructive">{errors.registrationNumber}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="jobRole">Cargo/Função *</Label>
+                <Select value={jobRole} onValueChange={setJobRole} disabled={loading}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione seu cargo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {JOB_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.jobRole && (
+                  <p className="text-sm text-destructive">{errors.jobRole}</p>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-4 mt-4">
+                <p className="text-sm text-muted-foreground mb-4">Dados de acesso</p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email *</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    disabled={loading}
+                    className="bg-background"
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="signup-password">Senha *</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    disabled={loading}
+                    className="bg-background"
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full shadow-soft" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cadastrando...
+                  </>
+                ) : (
+                  'Cadastrar'
+                )}
+              </Button>
+            </form>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Já tem uma conta?{' '}
+              <Link to="/login-admin" className="text-primary font-medium hover:underline">
+                Fazer login
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

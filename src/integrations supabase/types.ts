@@ -23,6 +23,8 @@ export type Database = {
           name: string
           status: Database["public"]["Enums"]["patient_status"]
           updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
         }
         Insert: {
           created_at?: string
@@ -32,6 +34,8 @@ export type Database = {
           name: string
           status?: Database["public"]["Enums"]["patient_status"]
           updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
         }
         Update: {
           created_at?: string
@@ -41,8 +45,18 @@ export type Database = {
           name?: string
           status?: Database["public"]["Enums"]["patient_status"]
           updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pre_checkin: {
         Row: {
@@ -71,6 +85,39 @@ export type Database = {
           id?: string
           nome?: string
           status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cpf: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          job_role: string | null
+          registration_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          cpf?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          job_role?: string | null
+          registration_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          cpf?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          job_role?: string | null
+          registration_number?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

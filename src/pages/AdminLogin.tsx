@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Loader2, AlertCircle } from 'lucide-react';
+import { Shield, Loader2, AlertCircle, HeartHandshake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -28,7 +28,7 @@ export default function AdminLogin() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -63,68 +63,81 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Login Administrativo</CardTitle>
-          <CardDescription>
-            Acesso restrito à equipe de enfermagem
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {errorMessage && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="signin-email">Email</Label>
-              <Input
-                id="signin-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-                disabled={loading}
-              />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <HeartHandshake className="w-5 h-5 text-primary" />
+          <span className="font-semibold">Zelo</span>
+        </Link>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border border-border shadow-card">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mb-4 shadow-soft">
+              <Shield className="w-8 h-8 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="signin-password">Senha</Label>
-              <Input
-                id="signin-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                disabled={loading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
-                </>
-              ) : (
-                'Entrar'
-              )}
-            </Button>
-          </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            Não tem uma conta?{' '}
-            <Link to="/registrar-admin" className="text-primary hover:underline">
-              Cadastrar-se
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-2xl text-foreground">Login Administrativo</CardTitle>
+            <CardDescription>
+              Acesso restrito à equipe de enfermagem
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                  disabled={loading}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Senha</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="bg-background"
+                />
+              </div>
+              <Button type="submit" className="w-full shadow-soft" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Não tem uma conta?{' '}
+              <Link to="/registrar-admin" className="text-primary font-medium hover:underline">
+                Cadastrar-se
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

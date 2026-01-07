@@ -3,13 +3,15 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, AlertCircle } from 'lucide-react';
+import { HeartHandshake, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PatientStepper } from '@/components/PatientStepper';
 import { PatientStatus } from '@/lib/constants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
+import { Link } from 'react-router-dom';
+import { DateInput } from '@/components/DateInput';
 
 interface Patient {
   id: string;
@@ -128,19 +130,21 @@ export default function CompanionLogin() {
 
   if (patient && patient.status && patient.name) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col">
-        <header className="py-6 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Heart className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">Acompanhamento Hospitalar</h1>
-          </div>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <header className="container mx-auto px-4 py-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <HeartHandshake className="w-5 h-5 text-primary" />
+            <span className="font-semibold">Zelo</span>
+          </Link>
         </header>
+        
         <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl">
+          <Card className="w-full max-w-2xl bg-companion border border-companion/50 shadow-card">
             <CardContent className="pt-6">
               <PatientStepper currentStatus={patient.status} patientName={patient.name} />
               <div className="text-center mt-6">
-                <Button variant="outline" onClick={() => setPatient(null)}>
+                <Button variant="outline" onClick={() => setPatient(null)} className="bg-white/80">
                   Voltar
                 </Button>
               </div>
@@ -152,49 +156,61 @@ export default function CompanionLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Heart className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Acompanhamento de Paciente</CardTitle>
-          <CardDescription>
-            Insira os dados do paciente para acompanhar o status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Insira o nome exatamente como consta na ficha de internamento.
-            </AlertDescription>
-          </Alert>
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo do Paciente</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Digite o nome completo"
-              />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <HeartHandshake className="w-5 h-5 text-primary" />
+          <span className="font-semibold">Zelo</span>
+        </Link>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-companion border border-companion/50 shadow-card">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-white/80 flex items-center justify-center mb-4 shadow-soft">
+              <HeartHandshake className="w-8 h-8 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="dataNascimento">Data de Nascimento</Label>
-              <Input
-                id="dataNascimento"
-                type="date"
-                value={dataNascimento}
-                onChange={(e) => setDataNascimento(e.target.value)}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Buscando...' : 'Buscar Paciente'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-2xl text-foreground">Acompanhamento de Paciente</CardTitle>
+            <CardDescription className="text-companion-foreground">
+              Insira os dados do paciente para acompanhar o status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4 bg-white/60 border-white/80">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Insira o nome exatamente como consta na ficha de internamento.
+              </AlertDescription>
+            </Alert>
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo do Paciente</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Digite o nome completo"
+                  className="bg-white/80 border-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                <DateInput
+                  id="dataNascimento"
+                  value={dataNascimento}
+                  onChange={setDataNascimento}
+                  className="bg-white/80 border-white"
+                />
+              </div>
+              <Button type="submit" className="w-full shadow-soft" disabled={loading}>
+                {loading ? 'Buscando...' : 'Buscar Paciente'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

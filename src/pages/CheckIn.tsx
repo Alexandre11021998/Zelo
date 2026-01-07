@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ClipboardCheck, Upload, Loader2 } from 'lucide-react';
+import { ClipboardCheck, Upload, Loader2, HeartHandshake } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function CheckIn() {
   const [nome, setNome] = useState('');
@@ -113,117 +114,141 @@ export default function CheckIn() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <ClipboardCheck className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-600">Check-in Realizado!</CardTitle>
-            <CardDescription>
-              Seus dados foram enviados com sucesso. Aguarde ser chamado pela recepção.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setSuccess(false)} variant="outline" className="w-full">
-              Fazer novo check-in
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <header className="container mx-auto px-4 py-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <HeartHandshake className="w-5 h-5 text-primary" />
+            <span className="font-semibold">Zelo</span>
+          </Link>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md text-center bg-card border border-border shadow-card">
+            <CardHeader>
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-companion flex items-center justify-center mb-4 shadow-soft">
+                <ClipboardCheck className="w-8 h-8 text-companion-foreground" />
+              </div>
+              <CardTitle className="text-2xl text-foreground">Check-in Realizado!</CardTitle>
+              <CardDescription>
+                Seus dados foram enviados com sucesso. Aguarde ser chamado pela recepção.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setSuccess(false)} variant="outline" className="w-full">
+                Fazer novo check-in
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 rounded-lg bg-primary flex items-center justify-center mb-4">
-            <ClipboardCheck className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <CardTitle className="text-2xl">Check-in do Paciente</CardTitle>
-          <CardDescription>
-            Preencha seus dados para realizar o pré-cadastro
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo *</Label>
-              <Input
-                id="nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Digite seu nome completo"
-                disabled={loading}
-              />
-            </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <HeartHandshake className="w-5 h-5 text-primary" />
+          <span className="font-semibold">Zelo</span>
+        </Link>
+      </header>
 
-            <div className="space-y-2">
-              <Label htmlFor="cpf">CPF *</Label>
-              <Input
-                id="cpf"
-                value={cpf}
-                onChange={handleCPFChange}
-                placeholder="000.000.000-00"
-                disabled={loading}
-              />
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border border-border shadow-card">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-soft">
+              <ClipboardCheck className="w-7 h-7 text-primary-foreground" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="convenio">Convênio *</Label>
-              <Input
-                id="convenio"
-                value={convenio}
-                onChange={(e) => setConvenio(e.target.value)}
-                placeholder="Nome do convênio ou Particular"
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="documento">Foto do Documento</Label>
-              <div className="relative">
+            <CardTitle className="text-2xl text-foreground">Check-in do Paciente</CardTitle>
+            <CardDescription>
+              Preencha seus dados para realizar o pré-cadastro
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome Completo *</Label>
                 <Input
-                  id="documento"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => setDocumento(e.target.files?.[0] || null)}
+                  id="nome"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Digite seu nome completo"
                   disabled={loading}
-                  className="hidden"
+                  className="bg-background"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => document.getElementById('documento')?.click()}
-                  disabled={loading}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {documento ? documento.name : 'Selecionar ou tirar foto'}
-                </Button>
               </div>
-              {documento && (
-                <p className="text-sm text-muted-foreground">
-                  Arquivo selecionado: {documento.name}
-                </p>
-              )}
-            </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                'Realizar Check-in'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input
+                  id="cpf"
+                  value={cpf}
+                  onChange={handleCPFChange}
+                  placeholder="000.000.000-00"
+                  disabled={loading}
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="convenio">Convênio *</Label>
+                <Input
+                  id="convenio"
+                  value={convenio}
+                  onChange={(e) => setConvenio(e.target.value)}
+                  placeholder="Nome do convênio ou Particular"
+                  disabled={loading}
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="documento">Foto do Documento</Label>
+                <div className="relative">
+                  <Input
+                    id="documento"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => setDocumento(e.target.files?.[0] || null)}
+                    disabled={loading}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start bg-background"
+                    onClick={() => document.getElementById('documento')?.click()}
+                    disabled={loading}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {documento ? documento.name : 'Selecionar ou tirar foto'}
+                  </Button>
+                </div>
+                {documento && (
+                  <p className="text-sm text-muted-foreground">
+                    Arquivo selecionado: {documento.name}
+                  </p>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full shadow-soft" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  'Realizar Check-in'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

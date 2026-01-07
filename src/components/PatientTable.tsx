@@ -66,7 +66,7 @@ export function PatientTable({
   showReactivate,
 }: PatientTableProps) {
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
