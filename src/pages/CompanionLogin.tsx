@@ -18,6 +18,7 @@ interface Patient {
   name: string;
   data_nascimento: string;
   status: PatientStatus;
+  hospital_id: string | null;
 }
 
 const companionSearchSchema = z.object({
@@ -39,9 +40,9 @@ const normalizeName = (raw: string) =>
     .trim()
     .replace(/\s+/g, ' ');
 
-// ILIKE é case-insensitive, mas é pattern matching; usar % entre as palavras ajuda
-// a não falhar por diferenças pequenas de espaçamento no banco.
-const nameToIlikePattern = (normalizedName: string) => normalizedName.split(' ').join('%');
+// ILIKE é case-insensitive; usar % no início, fim e entre palavras para busca flexível
+const nameToIlikePattern = (normalizedName: string) => 
+  `%${normalizedName.split(' ').join('%')}%`;
 
 export default function CompanionLogin() {
   const [name, setName] = useState('');
@@ -69,7 +70,7 @@ export default function CompanionLogin() {
 
     setLoading(true);
 
-    // Case-insensitive search using ILIKE, only active patients
+    // Case-insensitive search using ILIKE, only active patients (is_active=true means not discharged)
     const { data, error } = await supabase
       .from('patients')
       .select('*')
