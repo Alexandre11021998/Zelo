@@ -15,16 +15,21 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
-  const { signIn, user, isAdmin, loading: authLoading } = useAuth();
+  const { signIn, user, isAdmin, isSuperAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redireciona quando o usuário estiver autenticado e for admin
+  // Redireciona quando o usuário estiver autenticado e for admin ou superadmin
   useEffect(() => {
-    if (!authLoading && user && isAdmin) {
-      console.log('Usuário autenticado como admin, redirecionando...');
-      navigate('/gestao-hospitalar', { replace: true });
+    if (!authLoading && user) {
+      if (isSuperAdmin) {
+        console.log('Usuário autenticado como superadmin, redirecionando...');
+        navigate('/superadmin', { replace: true });
+      } else if (isAdmin) {
+        console.log('Usuário autenticado como admin, redirecionando...');
+        navigate('/gestao-hospitalar', { replace: true });
+      }
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, isSuperAdmin, authLoading, navigate]);
 
   if (authLoading) {
     return (
