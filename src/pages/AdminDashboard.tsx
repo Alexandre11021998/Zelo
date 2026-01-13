@@ -7,12 +7,13 @@ import { DateInput } from '@/components/DateInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut, HeartHandshake, UserSearch, History, UserPlus, Loader2 } from 'lucide-react';
+import { LogOut, HeartHandshake, UserSearch, History, UserPlus, Loader2, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { PatientStatus } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -42,9 +43,12 @@ export default function AdminDashboard() {
   const [newPatientName, setNewPatientName] = useState('');
   const [newPatientDob, setNewPatientDob] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signOut, user } = useAuth();
+  const { signOut, user, isSuperAdmin } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+
+  // Check if user is a manager (superadmin or has management privileges)
+  const isManager = isSuperAdmin;
 
   const getUpdatedByInfo = () => ({
     updated_by: user?.id || null,
@@ -63,6 +67,15 @@ export default function AdminDashboard() {
       return;
     }
 
+    if (!profile?.hospital_id) {
+      toast({
+        title: 'Hospital não configurado',
+        description: 'Seu perfil não está vinculado a nenhum hospital. Contate o administrador.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const { error } = await supabase
@@ -70,6 +83,7 @@ export default function AdminDashboard() {
       .insert({
         name: newPatientName.trim(),
         data_nascimento: newPatientDob,
+        hospital_id: profile.hospital_id,
         ...getUpdatedByInfo(),
       });
 
@@ -95,10 +109,23 @@ export default function AdminDashboard() {
   };
 
   const fetchPatients = async () => {
-    const { data, error } = await supabase
+    // Superadmins can see all patients; regular admins need hospital_id
+    if (!isSuperAdmin && !profile?.hospital_id) {
+      setLoading(false);
+      return;
+    }
+
+    let query = supabase
       .from('patients')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // Only filter by hospital_id if NOT superadmin
+    if (!isSuperAdmin && profile?.hospital_id) {
+      query = query.eq('hospital_id', profile.hospital_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Erro ao carregar pacientes:', error);
@@ -114,7 +141,13 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchPatients();
+    // Superadmins can fetch immediately; admins need hospital_id
+    if (isSuperAdmin || profile?.hospital_id) {
+      fetchPatients();
+    } else if (profile !== undefined) {
+      // Profile loaded but no hospital_id and not superadmin
+      setLoading(false);
+    }
 
     const channel = supabase
       .channel('patients-changes')
@@ -128,7 +161,7 @@ export default function AdminDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isSuperAdmin, profile?.hospital_id]);
 
   const handleStatusChange = async (patientId: string, newStatus: PatientStatus) => {
     setUpdatingId(patientId);
@@ -245,10 +278,20 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-          <Button variant="secondary" onClick={signOut} className="shadow-soft">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            {isManager && (
+              <Link to="/equipe">
+                <Button variant="secondary" size="sm" className="shadow-soft">
+                  <Users className="w-4 h-4 mr-2" />
+                  Equipe
+                </Button>
+              </Link>
+            )}
+            <Button variant="secondary" onClick={signOut} className="shadow-soft">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
