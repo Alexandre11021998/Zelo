@@ -3,11 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Building2, Plus, LogOut, Loader2 } from 'lucide-react';
+import { Building2, Plus, LogOut, Loader2, MapPin, User, AlertCircle, Pencil } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -17,21 +21,83 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Hospital {
   id: string;
   name: string;
   cnpj: string;
+  razao_social: string | null;
+  email_contato: string | null;
+  telefone: string | null;
+  cep: string | null;
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  uf: string | null;
+  nome_gestor: string | null;
+  dados_faturamento: string | null;
+  logo_url: string | null;
   created_at: string;
 }
+
+interface HospitalFormData {
+  name: string;
+  cnpj: string;
+  razao_social: string;
+  email_contato: string;
+  telefone: string;
+  cep: string;
+  endereco: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  nome_gestor: string;
+  email_gestor: string;
+  dados_faturamento: string;
+}
+
+const UF_OPTIONS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
+const initialFormData: HospitalFormData = {
+  name: '',
+  cnpj: '',
+  razao_social: '',
+  email_contato: '',
+  telefone: '',
+  cep: '',
+  endereco: '',
+  numero: '',
+  bairro: '',
+  cidade: '',
+  uf: '',
+  nome_gestor: '',
+  email_gestor: '',
+  dados_faturamento: '',
+};
 
 export default function SuperAdmin() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [hospitalName, setHospitalName] = useState('');
-  const [hospitalCnpj, setHospitalCnpj] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
+  const [formData, setFormData] = useState<HospitalFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gestorStatus, setGestorStatus] = useState<'idle' | 'checking' | 'found' | 'not_found'>('idle');
+  const [gestorUserId, setGestorUserId] = useState<string | null>(null);
   const { signOut } = useAuth();
   const { toast } = useToast();
 
@@ -67,24 +133,88 @@ export default function SuperAdmin() {
       .replace(/(\d{4})(\d)/, '$1-$2');
   };
 
-  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHospitalCnpj(formatCnpj(e.target.value));
+  const formatTelefone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 10) {
+      return digits
+        .replace(/^(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    return digits
+      .replace(/^(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2');
   };
+
+  const formatCep = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    return digits.replace(/^(\d{5})(\d)/, '$1-$2');
+  };
+
+  const handleInputChange = (field: keyof HospitalFormData, value: string) => {
+    let formattedValue = value;
+    
+    if (field === 'cnpj') {
+      formattedValue = formatCnpj(value);
+    } else if (field === 'telefone') {
+      formattedValue = formatTelefone(value);
+    } else if (field === 'cep') {
+      formattedValue = formatCep(value);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: formattedValue }));
+  };
+
+  const checkGestorEmail = async (email: string) => {
+    if (!email.trim() || !email.includes('@')) {
+      setGestorStatus('idle');
+      setGestorUserId(null);
+      return;
+    }
+
+    setGestorStatus('checking');
+
+    // Check if user exists by looking for their profile with this email
+    // We need to check auth.users via a lookup in profiles or by email
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .limit(100);
+
+    if (error) {
+      console.error('Erro ao verificar gestor:', error);
+      setGestorStatus('idle');
+      return;
+    }
+
+    // Since we can't query auth.users directly, we'll check if any profile exists
+    // For now, we'll set as not_found and handle linking during submission
+    setGestorStatus('not_found');
+    setGestorUserId(null);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.email_gestor) {
+        checkGestorEmail(formData.email_gestor);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.email_gestor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hospitalName.trim() || !hospitalCnpj.trim()) {
+    if (!formData.name.trim() || !formData.cnpj.trim()) {
       toast({
         title: 'Campos obrigatórios',
-        description: 'Preencha o nome e o CNPJ do hospital.',
+        description: 'Preencha pelo menos o nome fantasia e o CNPJ do hospital.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate CNPJ format (14 digits)
-    const cnpjDigits = hospitalCnpj.replace(/\D/g, '');
+    const cnpjDigits = formData.cnpj.replace(/\D/g, '');
     if (cnpjDigits.length !== 14) {
       toast({
         title: 'CNPJ inválido',
@@ -96,12 +226,25 @@ export default function SuperAdmin() {
 
     setIsSubmitting(true);
 
-    const { error } = await supabase
+    const { data: newHospital, error } = await supabase
       .from('hospitals')
       .insert({
-        name: hospitalName.trim(),
-        cnpj: cnpjDigits, // Store only digits
-      });
+        name: formData.name.trim(),
+        cnpj: cnpjDigits,
+        razao_social: formData.razao_social.trim() || null,
+        email_contato: formData.email_contato.trim() || null,
+        telefone: formData.telefone.replace(/\D/g, '') || null,
+        cep: formData.cep.replace(/\D/g, '') || null,
+        endereco: formData.endereco.trim() || null,
+        numero: formData.numero.trim() || null,
+        bairro: formData.bairro.trim() || null,
+        cidade: formData.cidade.trim() || null,
+        uf: formData.uf || null,
+        nome_gestor: formData.nome_gestor.trim() || null,
+        dados_faturamento: formData.dados_faturamento.trim() || null,
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error('Erro ao cadastrar hospital:', error);
@@ -118,17 +261,29 @@ export default function SuperAdmin() {
           variant: 'destructive',
         });
       }
+      setIsSubmitting(false);
+      return;
+    }
+
+    // If gestor email was provided, try to link them
+    if (formData.email_gestor.trim() && newHospital) {
+      // We'll show a message that the manager needs to be linked manually or create an invitation system
+      toast({
+        title: 'Hospital cadastrado',
+        description: `${formData.name} foi adicionado. O gestor ${formData.email_gestor} precisará ser vinculado quando criar sua conta.`,
+      });
     } else {
       toast({
         title: 'Hospital cadastrado',
-        description: `${hospitalName} foi adicionado com sucesso.`,
+        description: `${formData.name} foi adicionado com sucesso.`,
       });
-      setHospitalName('');
-      setHospitalCnpj('');
-      setIsDialogOpen(false);
-      fetchHospitals();
     }
 
+    setFormData(initialFormData);
+    setGestorStatus('idle');
+    setGestorUserId(null);
+    setIsDialogOpen(false);
+    fetchHospitals();
     setIsSubmitting(false);
   };
 
@@ -136,6 +291,101 @@ export default function SuperAdmin() {
     const digits = cnpj.replace(/\D/g, '');
     if (digits.length !== 14) return cnpj;
     return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setGestorStatus('idle');
+    setGestorUserId(null);
+    setEditingHospital(null);
+  };
+
+  const handleEditHospital = (hospital: Hospital) => {
+    setEditingHospital(hospital);
+    setFormData({
+      name: hospital.name,
+      cnpj: formatCnpj(hospital.cnpj),
+      razao_social: hospital.razao_social || '',
+      email_contato: hospital.email_contato || '',
+      telefone: hospital.telefone ? formatTelefone(hospital.telefone) : '',
+      cep: hospital.cep ? formatCep(hospital.cep) : '',
+      endereco: hospital.endereco || '',
+      numero: hospital.numero || '',
+      bairro: hospital.bairro || '',
+      cidade: hospital.cidade || '',
+      uf: hospital.uf || '',
+      nome_gestor: hospital.nome_gestor || '',
+      email_gestor: '',
+      dados_faturamento: hospital.dados_faturamento || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateHospital = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingHospital) return;
+
+    if (!formData.name.trim() || !formData.cnpj.trim()) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha pelo menos o nome fantasia e o CNPJ do hospital.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const cnpjDigits = formData.cnpj.replace(/\D/g, '');
+    if (cnpjDigits.length !== 14) {
+      toast({
+        title: 'CNPJ inválido',
+        description: 'O CNPJ deve ter 14 dígitos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase
+      .from('hospitals')
+      .update({
+        name: formData.name.trim(),
+        cnpj: cnpjDigits,
+        razao_social: formData.razao_social.trim() || null,
+        email_contato: formData.email_contato.trim() || null,
+        telefone: formData.telefone.replace(/\D/g, '') || null,
+        cep: formData.cep.replace(/\D/g, '') || null,
+        endereco: formData.endereco.trim() || null,
+        numero: formData.numero.trim() || null,
+        bairro: formData.bairro.trim() || null,
+        cidade: formData.cidade.trim() || null,
+        uf: formData.uf || null,
+        nome_gestor: formData.nome_gestor.trim() || null,
+        dados_faturamento: formData.dados_faturamento.trim() || null,
+      })
+      .eq('id', editingHospital.id);
+
+    if (error) {
+      console.error('Erro ao atualizar hospital:', error);
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    toast({
+      title: 'Hospital atualizado',
+      description: `${formData.name} foi atualizado com sucesso.`,
+    });
+
+    resetForm();
+    setIsEditDialogOpen(false);
+    fetchHospitals();
+    setIsSubmitting(false);
   };
 
   return (
@@ -162,59 +412,528 @@ export default function SuperAdmin() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-foreground">Hospitais Cadastrados</h2>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
             <DialogTrigger asChild>
               <Button className="shadow-soft">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Hospital
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border shadow-card">
+            <DialogContent className="bg-card border-border shadow-card max-w-2xl max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle className="text-foreground">Cadastrar Novo Hospital</DialogTitle>
                 <DialogDescription>
                   Preencha os dados do hospital para realizar o cadastro.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hospitalName">Nome do Hospital</Label>
-                    <Input
-                      id="hospitalName"
-                      placeholder="Ex: Hospital São Lucas"
-                      value={hospitalName}
-                      onChange={(e) => setHospitalName(e.target.value)}
-                      disabled={isSubmitting}
-                      className="bg-background"
-                    />
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <form onSubmit={handleSubmit} id="hospital-form">
+                  <div className="space-y-6 py-4">
+                    {/* Dados Gerais */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <Building2 className="w-4 h-4" />
+                        Dados Gerais
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Nome Fantasia *</Label>
+                            <Input
+                              id="name"
+                              placeholder="Ex: Hospital São Lucas"
+                              value={formData.name}
+                              onChange={(e) => handleInputChange('name', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="razao_social">Razão Social</Label>
+                            <Input
+                              id="razao_social"
+                              placeholder="Razão social completa"
+                              value={formData.razao_social}
+                              onChange={(e) => handleInputChange('razao_social', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="cnpj">CNPJ *</Label>
+                            <Input
+                              id="cnpj"
+                              placeholder="00.000.000/0000-00"
+                              value={formData.cnpj}
+                              onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="telefone">Telefone</Label>
+                            <Input
+                              id="telefone"
+                              placeholder="(00) 00000-0000"
+                              value={formData.telefone}
+                              onChange={(e) => handleInputChange('telefone', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email_contato">E-mail de Contato</Label>
+                          <Input
+                            id="email_contato"
+                            type="email"
+                            placeholder="contato@hospital.com.br"
+                            value={formData.email_contato}
+                            onChange={(e) => handleInputChange('email_contato', e.target.value)}
+                            disabled={isSubmitting}
+                            className="bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Endereço */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <MapPin className="w-4 h-4" />
+                        Endereço
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="cep">CEP</Label>
+                            <Input
+                              id="cep"
+                              placeholder="00000-000"
+                              value={formData.cep}
+                              onChange={(e) => handleInputChange('cep', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-2">
+                            <Label htmlFor="endereco">Logradouro</Label>
+                            <Input
+                              id="endereco"
+                              placeholder="Rua, Avenida..."
+                              value={formData.endereco}
+                              onChange={(e) => handleInputChange('endereco', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="numero">Número</Label>
+                            <Input
+                              id="numero"
+                              placeholder="123"
+                              value={formData.numero}
+                              onChange={(e) => handleInputChange('numero', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="col-span-3 space-y-2">
+                            <Label htmlFor="bairro">Bairro</Label>
+                            <Input
+                              id="bairro"
+                              placeholder="Bairro"
+                              value={formData.bairro}
+                              onChange={(e) => handleInputChange('bairro', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-2 space-y-2">
+                            <Label htmlFor="cidade">Cidade</Label>
+                            <Input
+                              id="cidade"
+                              placeholder="Cidade"
+                              value={formData.cidade}
+                              onChange={(e) => handleInputChange('cidade', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="uf">UF</Label>
+                            <Select
+                              value={formData.uf}
+                              onValueChange={(value) => handleInputChange('uf', value)}
+                              disabled={isSubmitting}
+                            >
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="UF" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {UF_OPTIONS.map(uf => (
+                                  <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Gestor */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <User className="w-4 h-4" />
+                        Gestor Responsável
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="nome_gestor">Nome do Gestor</Label>
+                            <Input
+                              id="nome_gestor"
+                              placeholder="Nome completo"
+                              value={formData.nome_gestor}
+                              onChange={(e) => handleInputChange('nome_gestor', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="email_gestor">E-mail do Gestor</Label>
+                            <Input
+                              id="email_gestor"
+                              type="email"
+                              placeholder="gestor@hospital.com.br"
+                              value={formData.email_gestor}
+                              onChange={(e) => handleInputChange('email_gestor', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        
+                        {gestorStatus === 'checking' && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Verificando e-mail do gestor...
+                          </div>
+                        )}
+                        
+                        {gestorStatus === 'not_found' && formData.email_gestor && (
+                          <Alert variant="default" className="bg-amber-50 border-amber-200">
+                            <AlertCircle className="h-4 w-4 text-amber-600" />
+                            <AlertDescription className="text-amber-800">
+                              Nenhuma conta encontrada com este e-mail. O gestor será vinculado automaticamente quando criar uma conta com este e-mail.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Faturamento */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-3">
+                        Dados de Faturamento
+                      </h3>
+                      <div className="pl-6">
+                        <Textarea
+                          id="dados_faturamento"
+                          placeholder="Informações adicionais para faturamento..."
+                          value={formData.dados_faturamento}
+                          onChange={(e) => handleInputChange('dados_faturamento', e.target.value)}
+                          disabled={isSubmitting}
+                          className="bg-background min-h-[80px]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hospitalCnpj">CNPJ</Label>
-                    <Input
-                      id="hospitalCnpj"
-                      placeholder="00.000.000/0000-00"
-                      value={hospitalCnpj}
-                      onChange={handleCnpjChange}
-                      disabled={isSubmitting}
-                      className="bg-background"
-                    />
+                </form>
+              </ScrollArea>
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)} 
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  form="hospital-form"
+                  disabled={isSubmitting} 
+                  className="shadow-soft"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Cadastrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Hospital Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogContent className="bg-card border-border shadow-card max-w-2xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Editar Hospital</DialogTitle>
+                <DialogDescription>
+                  Atualize os dados do hospital.
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <form onSubmit={handleUpdateHospital} id="hospital-edit-form">
+                  <div className="space-y-6 py-4">
+                    {/* Dados Gerais */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <Building2 className="w-4 h-4" />
+                        Dados Gerais
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name">Nome Fantasia *</Label>
+                            <Input
+                              id="edit-name"
+                              placeholder="Ex: Hospital São Lucas"
+                              value={formData.name}
+                              onChange={(e) => handleInputChange('name', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-razao_social">Razão Social</Label>
+                            <Input
+                              id="edit-razao_social"
+                              placeholder="Razão social completa"
+                              value={formData.razao_social}
+                              onChange={(e) => handleInputChange('razao_social', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-cnpj">CNPJ *</Label>
+                            <Input
+                              id="edit-cnpj"
+                              placeholder="00.000.000/0000-00"
+                              value={formData.cnpj}
+                              onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-telefone">Telefone</Label>
+                            <Input
+                              id="edit-telefone"
+                              placeholder="(00) 00000-0000"
+                              value={formData.telefone}
+                              onChange={(e) => handleInputChange('telefone', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-email_contato">E-mail de Contato</Label>
+                          <Input
+                            id="edit-email_contato"
+                            type="email"
+                            placeholder="contato@hospital.com.br"
+                            value={formData.email_contato}
+                            onChange={(e) => handleInputChange('email_contato', e.target.value)}
+                            disabled={isSubmitting}
+                            className="bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Endereço */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <MapPin className="w-4 h-4" />
+                        Endereço
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-cep">CEP</Label>
+                            <Input
+                              id="edit-cep"
+                              placeholder="00000-000"
+                              value={formData.cep}
+                              onChange={(e) => handleInputChange('cep', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-2">
+                            <Label htmlFor="edit-endereco">Logradouro</Label>
+                            <Input
+                              id="edit-endereco"
+                              placeholder="Rua, Avenida..."
+                              value={formData.endereco}
+                              onChange={(e) => handleInputChange('endereco', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-numero">Número</Label>
+                            <Input
+                              id="edit-numero"
+                              placeholder="123"
+                              value={formData.numero}
+                              onChange={(e) => handleInputChange('numero', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="col-span-3 space-y-2">
+                            <Label htmlFor="edit-bairro">Bairro</Label>
+                            <Input
+                              id="edit-bairro"
+                              placeholder="Bairro"
+                              value={formData.bairro}
+                              onChange={(e) => handleInputChange('bairro', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-2 space-y-2">
+                            <Label htmlFor="edit-cidade">Cidade</Label>
+                            <Input
+                              id="edit-cidade"
+                              placeholder="Cidade"
+                              value={formData.cidade}
+                              onChange={(e) => handleInputChange('cidade', e.target.value)}
+                              disabled={isSubmitting}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-uf">UF</Label>
+                            <Select
+                              value={formData.uf}
+                              onValueChange={(value) => handleInputChange('uf', value)}
+                              disabled={isSubmitting}
+                            >
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="UF" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {UF_OPTIONS.map(uf => (
+                                  <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Gestor */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <User className="w-4 h-4" />
+                        Gestor Responsável
+                      </h3>
+                      <div className="space-y-4 pl-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-nome_gestor">Nome do Gestor</Label>
+                          <Input
+                            id="edit-nome_gestor"
+                            placeholder="Nome completo"
+                            value={formData.nome_gestor}
+                            onChange={(e) => handleInputChange('nome_gestor', e.target.value)}
+                            disabled={isSubmitting}
+                            className="bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Faturamento */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-3">
+                        Dados de Faturamento
+                      </h3>
+                      <div className="pl-6">
+                        <Textarea
+                          id="edit-dados_faturamento"
+                          placeholder="Informações adicionais para faturamento..."
+                          value={formData.dados_faturamento}
+                          onChange={(e) => handleInputChange('dados_faturamento', e.target.value)}
+                          disabled={isSubmitting}
+                          className="bg-background min-h-[80px]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting} className="shadow-soft">
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Plus className="w-4 h-4 mr-2" />
-                    )}
-                    Cadastrar
-                  </Button>
-                </DialogFooter>
-              </form>
+                </form>
+              </ScrollArea>
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)} 
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  form="hospital-edit-form"
+                  disabled={isSubmitting} 
+                  className="shadow-soft"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Pencil className="w-4 h-4 mr-2" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -245,7 +964,10 @@ export default function SuperAdmin() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>CNPJ</TableHead>
+                    <TableHead>Cidade</TableHead>
+                    <TableHead>Gestor</TableHead>
                     <TableHead>Cadastrado em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,7 +976,23 @@ export default function SuperAdmin() {
                       <TableCell className="font-medium">{hospital.name}</TableCell>
                       <TableCell>{formatDisplayCnpj(hospital.cnpj)}</TableCell>
                       <TableCell>
+                        {hospital.cidade && hospital.uf 
+                          ? `${hospital.cidade}/${hospital.uf}` 
+                          : hospital.cidade || '-'}
+                      </TableCell>
+                      <TableCell>{hospital.nome_gestor || '-'}</TableCell>
+                      <TableCell>
                         {new Date(hospital.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditHospital(hospital)}
+                        >
+                          <Pencil className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
