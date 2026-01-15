@@ -33,6 +33,7 @@ interface Hospital {
   id: string;
   name: string;
   cnpj: string;
+  codigo_acesso: string;
   razao_social: string | null;
   email_contato: string | null;
   telefone: string | null;
@@ -226,11 +227,15 @@ export default function SuperAdmin() {
 
     setIsSubmitting(true);
 
+    // Generate random 6-char access code
+    const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
     const { data: newHospital, error } = await supabase
       .from('hospitals')
       .insert({
         name: formData.name.trim(),
         cnpj: cnpjDigits,
+        codigo_acesso: generateCode(),
         razao_social: formData.razao_social.trim() || null,
         email_contato: formData.email_contato.trim() || null,
         telefone: formData.telefone.replace(/\D/g, '') || null,
