@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Zelo - Clean Hospital Theme
+   All colors are HSL.
+   
+   Design Philosophy:
+   - Off-white backgrounds to reduce eye strain
+   - Light surgical blue (scrub blue) for primary/nursing elements
+   - Light aqua/teal green for companion elements
+   - Clean white cards with soft shadows
+   - Dark text for perfect readability
+*/
+
+@layer base {
+  :root {
+    /* Off-white background for reduced eye strain */
+    --background: 210 20% 98%;
+    --foreground: 220 25% 10%;
+
+    /* Clean white cards with proper contrast */
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    /* Surgical Scrub Blue - Primary nursing color */
+    --primary: 199 65% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Very light aqua/teal for companion cards */
+    --secondary: 168 35% 92%;
+    --secondary-foreground: 220 25% 15%;
+
+    /* Companion card specific - light surgical green */
+    --companion: 168 40% 90%;
+    --companion-foreground: 168 45% 25%;
+
+    --muted: 210 15% 95%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 199 50% 94%;
+    --accent-foreground: 199 65% 35%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 199 65% 55%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar - Clean hospital theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 25% 20%;
+    --sidebar-primary: 199 65% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 199 50% 96%;
+    --sidebar-accent-foreground: 199 65% 35%;
+    --sidebar-border: 210 20% 92%;
+    --sidebar-ring: 199 65% 55%;
+
+    /* Custom shadows for soft card effect */
+    --shadow-soft: 0 2px 8px -2px hsl(220 25% 10% / 0.08), 
+                   0 4px 16px -4px hsl(220 25% 10% / 0.05);
+    --shadow-card: 0 1px 3px hsl(220 25% 10% / 0.04), 
+                   0 4px 12px hsl(220 25% 10% / 0.06);
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 210 20% 98%;
+
+    --card: 220 20% 13%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 220 20% 13%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 199 70% 50%;
+    --primary-foreground: 220 25% 10%;
+
+    --secondary: 168 30% 20%;
+    --secondary-foreground: 168 30% 90%;
+
+    --companion: 168 35% 18%;
+    --companion-foreground: 168 40% 85%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 199 40% 20%;
+    --accent-foreground: 199 60% 80%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 199 70% 50%;
+
+    --sidebar-background: 220 20% 12%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 199 70% 50%;
+    --sidebar-primary-foreground: 220 25% 10%;
+    --sidebar-accent: 199 30% 18%;
+    --sidebar-accent-foreground: 199 60% 80%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 199 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Soft shadow utility classes */
+@layer utilities {
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+}
